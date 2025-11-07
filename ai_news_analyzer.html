@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>기사 표현 분석기 - 리사도라 × 도라</title>
+  <style>
+    body {
+      font-family: 'Pretendard', sans-serif;
+      background: #f9f9fb;
+      margin: 0;
+      padding: 2rem;
+      color: #222;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 2rem;
+    }
+    input, button, textarea {
+      width: 100%;
+      margin: 0.5rem 0;
+      padding: 0.8rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    button {
+      background: #4b6bfb;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #3b5be0;
+    }
+    .result {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 10px;
+      background: #eef1ff;
+      white-space: pre-wrap;
+    }
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .col {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .col h3 {
+      margin-top: 0;
+      color: #4b6bfb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📰 기사 표현 분석기<br><small>리사도라 × 도라</small></h1>
+    <p>분석하고 싶은 기사 링크를 입력하면 AI가 원문 표현과 명확한 표현을 비교해 드립니다.</p>
+    <input type="text" id="articleUrl" placeholder="기사 URL을 입력하세요..." />
+    <input type="text" id="apiKey" placeholder="OpenAI API 키를 입력하세요 (sk-로 시작)" />
+    <button onclick="analyzeArticle()">AI로 분석하기</button>
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    async function analyzeArticle() {
+      const url = document.getElementById('articleUrl').value.trim();
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const resultDiv = document.getElementById('result');
+
+      if (!url || !apiKey) {
+        alert('URL과 OpenAI API 키를 입력해주세요.');
+        return;
+      }
+
+      resultDiv.innerHTML = '⏳ 기사를 분석 중입니다... 잠시만 기다려주세요...';
+
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: '너는 기사 내용을 읽고 원문 표현과 명확한 표현(중립적, 객관적 표현)을 비교하는 도우미야.'
+              },
+              {
+                role: 'user',
+                content: `이 기사(${url})의 주요 문장들에서 독자가 오해할 수 있는 원문 표현 vs 명확한 표현으로 정리해줘.`
+              }
+            ]
+          })
+        });
+
+        const data = await response.json();
+        const aiText = data.choices?.[0]?.message?.content || '분석 결과를 불러올 수 없습니다.';
+        resultDiv.innerHTML = `<div class='compare'><div class='col'><h3>원문 표현</h3>${aiText.split('vs 명확한 표현')[0] || ''}</div><div class='col'><h3>명확한 표현</h3>${aiText.split('vs 명확한 표현')[1] || ''}</div></div>`;
+      } catch (error) {
+        console.error(error);
+        resultDiv.innerHTML = '⚠️ 오류가 발생했습니다. API 키나 URL을 확인해주세요.';
+      }
+    }
+  </script>
+</body>
+</html>
